@@ -4,18 +4,20 @@ import com.project.uber.UberApp.dto.DriverDto;
 import com.project.uber.UberApp.dto.RideDto;
 import com.project.uber.UberApp.dto.RideRequestDto;
 import com.project.uber.UberApp.dto.RiderDto;
-import com.project.uber.UberApp.entities.Driver;
-import com.project.uber.UberApp.entities.RideRequest;
-import com.project.uber.UberApp.entities.Rider;
-import com.project.uber.UberApp.entities.User;
+import com.project.uber.UberApp.entities.*;
 import com.project.uber.UberApp.enums.RideRequestStatus;
+import com.project.uber.UberApp.enums.RideStatus;
 import com.project.uber.UberApp.exceptions.ResourceNotFoundException;
 import com.project.uber.UberApp.repositories.RideRequestRepository;
 import com.project.uber.UberApp.repositories.RiderRepository;
+import com.project.uber.UberApp.services.DriverService;
+import com.project.uber.UberApp.services.RideService;
 import com.project.uber.UberApp.services.RiderService;
 import com.project.uber.UberApp.strategies.RideStrategyManager;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +31,8 @@ public class RiderServiceImpl implements RiderService {
     private final RideStrategyManager rideStrategyManager;
     private final RideRequestRepository rideRequestRepository;
     private final RiderRepository riderRepository;
+    private final RideService rideService;
+    private final DriverService driverService;
 
     @Override
     @Transactional
@@ -50,7 +54,19 @@ public class RiderServiceImpl implements RiderService {
 
     @Override
     public RideDto cancelRide(Long rideId) {
-        return null;
+        Rider rider = getCurrentRider();
+        Ride ride = rideService.getRideById(rideId);
+        if(!ride.getRider().equals(rider)) {
+            throw new RuntimeException("Rider can cancel rides which belongs to them");
+        }
+        if(!ride.getRideStatus().equals(RideStatus.CONFIRMED)) {
+            throw new RuntimeException("Ride can not be cancelled, current status of ride is : " + ride.getRideStatus());
+        }
+
+        driverService.updateDriverAvailability(ride.getDriver(), true);
+
+        Ride savedRide = rideService.updateRideStatus(ride, RideStatus.CANCELLED);
+        return modelMapper.map(savedRide, RideDto.class);
     }
 
     @Override
@@ -60,12 +76,16 @@ public class RiderServiceImpl implements RiderService {
 
     @Override
     public RiderDto getMyProfile() {
-        return null;
+        Rider rider = getCurrentRider();
+        return modelMapper.map(rider, RiderDto.class);
     }
 
     @Override
-    public List<RideDto> getAllMyRides() {
-        return null;
+    public Page<RideDto> getAllMyRides(PageRequest pageRequest) {
+        Rider rider = getCurrentRider();
+        return rideService.getAllRidesOfRider(rider, pageRequest).map(
+                ride -> modelMapper.map(ride, RideDto.class)
+        );
     }
 
     @Override
