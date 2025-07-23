@@ -11,6 +11,7 @@ import com.project.uber.UberApp.exceptions.ResourceNotFoundException;
 import com.project.uber.UberApp.repositories.RideRequestRepository;
 import com.project.uber.UberApp.repositories.RiderRepository;
 import com.project.uber.UberApp.services.DriverService;
+import com.project.uber.UberApp.services.RatingService;
 import com.project.uber.UberApp.services.RideService;
 import com.project.uber.UberApp.services.RiderService;
 import com.project.uber.UberApp.strategies.RideStrategyManager;
@@ -33,6 +34,7 @@ public class RiderServiceImpl implements RiderService {
     private final RiderRepository riderRepository;
     private final RideService rideService;
     private final DriverService driverService;
+    private final RatingService ratingService;
 
     @Override
     @Transactional
@@ -71,7 +73,18 @@ public class RiderServiceImpl implements RiderService {
 
     @Override
     public DriverDto rateDriver(Long rideId, Integer rating) {
-        return null;
+        Ride ride = rideService.getRideById(rideId);
+        Rider rider = getCurrentRider();
+
+        if(!ride.getRider().equals(rider)) {
+            throw new RuntimeException("Rider does not own this ride");
+        }
+
+        if(!ride.getRideStatus().equals(RideStatus.ENDED)) {
+            throw new RuntimeException("Ride has not been ended yet, currently ride is " + ride.getRideStatus());
+        }
+
+        return ratingService.rateDriver(ride, rating);
     }
 
     @Override

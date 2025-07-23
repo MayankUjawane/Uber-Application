@@ -7,7 +7,9 @@ import lombok.Data;
 import java.util.Set;
 
 @Entity
-@Table(name = "app_user")
+@Table(name = "app_user", indexes = {
+        @Index(name = "idx_user_email", columnList = "email")
+})
 @Data
 public class User {
     @Id

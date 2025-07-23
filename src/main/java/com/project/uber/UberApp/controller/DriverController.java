@@ -36,7 +36,7 @@ public class DriverController {
         return ResponseEntity.ok(driverService.cancelRide(rideId));
     }
 
-    @PostMapping("/rateDriver")
+    @PostMapping("/rateRider")
     public ResponseEntity<RiderDto> rateRider(@RequestBody RatingDto ratingDto) {
         return ResponseEntity.ok(driverService.rateRider(ratingDto.getRideId(), ratingDto.getRating()));
     }

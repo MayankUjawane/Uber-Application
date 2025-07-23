@@ -1,6 +1,7 @@
 package com.project.uber.UberApp.controller;
 
 import com.project.uber.UberApp.dto.DriverDto;
+import com.project.uber.UberApp.dto.OnboardDriverDto;
 import com.project.uber.UberApp.dto.SignupDto;
 import com.project.uber.UberApp.dto.UserDto;
 import com.project.uber.UberApp.services.AuthService;
@@ -22,7 +23,7 @@ public class AuthController {
     }
 
     @PostMapping("/onBoardNewDriver/{userId}")
-    ResponseEntity<DriverDto> onBoardNewDriver(@PathVariable Long userId) {
-        return new ResponseEntity<>(authService.onboardNewDriver(userId), HttpStatus.CREATED);
+    ResponseEntity<DriverDto> onBoardNewDriver(@PathVariable Long userId, @RequestBody OnboardDriverDto onboardDriverDto) {
+        return new ResponseEntity<>(authService.onboardNewDriver(userId, onboardDriverDto.getVehicleNumber()), HttpStatus.CREATED);
     }
 }

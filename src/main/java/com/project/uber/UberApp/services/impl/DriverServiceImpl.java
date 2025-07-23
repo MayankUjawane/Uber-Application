@@ -10,10 +10,7 @@ import com.project.uber.UberApp.enums.RideRequestStatus;
 import com.project.uber.UberApp.enums.RideStatus;
 import com.project.uber.UberApp.exceptions.ResourceNotFoundException;
 import com.project.uber.UberApp.repositories.DriverRepository;
-import com.project.uber.UberApp.services.DriverService;
-import com.project.uber.UberApp.services.PaymentService;
-import com.project.uber.UberApp.services.RideRequestService;
-import com.project.uber.UberApp.services.RideService;
+import com.project.uber.UberApp.services.*;
 import lombok.RequiredArgsConstructor;
 import org.modelmapper.ModelMapper;
 import org.springframework.data.domain.Page;
@@ -32,6 +29,7 @@ public class DriverServiceImpl implements DriverService {
     private final RideService rideService;
     private final ModelMapper modelMapper;
     private final PaymentService paymentService;
+    private final RatingService ratingService;
 
     @Override
     @Transactional
@@ -93,6 +91,7 @@ public class DriverServiceImpl implements DriverService {
         Ride savedRide = rideService.updateRideStatus(ride, RideStatus.ONGOING);
 
         paymentService.createNewPayment(savedRide);
+        ratingService.createNewRating(savedRide);
 
         return modelMapper.map(savedRide, RideDto.class);
     }
@@ -121,7 +120,18 @@ public class DriverServiceImpl implements DriverService {
 
     @Override
     public RiderDto rateRider(Long rideId, Integer rating) {
-        return null;
+        Ride ride = rideService.getRideById(rideId);
+        Driver driver = getCurrentDriver();
+
+        if(!ride.getDriver().equals(driver)) {
+            throw new RuntimeException("Driver does not own this ride");
+        }
+
+        if(!ride.getRideStatus().equals(RideStatus.ENDED)) {
+            throw new RuntimeException("Ride has not been ended yet, currently ride is " + ride.getRideStatus());
+        }
+
+        return ratingService.rateRider(ride, rating);
     }
 
     @Override
@@ -146,6 +156,11 @@ public class DriverServiceImpl implements DriverService {
     @Override
     public Driver updateDriverAvailability(Driver driver, boolean available) {
         driver.setAvailable(available);
+        return driverRepository.save(driver);
+    }
+
+    @Override
+    public Driver createNewDriver(Driver driver) {
         return driverRepository.save(driver);
     }
 }
